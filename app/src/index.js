@@ -1,5 +1,5 @@
 const express = require('express');
-const { Pool } = require('pg');
+const { pg, Pool } = require('pg');
 const uuid = require('uuid/v4');
 const session = require('express-session');
 const FileStore = require('session-file-store')(session);
@@ -28,6 +28,33 @@ pool.on('error', (err, client) => {
     console.error('Unexpected error on idle client', err);
     process.exit(-1);
 });
+
+// check/update database tables
+(function checkDb() {
+    let tableExists = true;
+    pool.query(`
+        SELECT EXISTS (
+        SELECT 1
+        FROM   information_schema.tables 
+        WHERE  table_name = 'users'
+        );
+    `)
+    .then((res) => {
+        if (!res.rows[0].exists) {
+            tableExists = false;
+        }
+    });
+    if (!tableExists) {
+        pool.query(`
+            CREATE TABLE users (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR NOT NULL,
+                email VARCHAR NOT NULL,
+                score VARCHAR DEFAULT 0
+            );
+        `)
+    }
+})();
 
 // configure passport for AUTH strategy
 passport.use(
