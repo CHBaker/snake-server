@@ -7,6 +7,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
+const bcrypt = require('bcrypt');
 const env = require('../../.env').env;
 
 // configs
@@ -45,9 +46,10 @@ passport.use(
                         message: 'Invalid Credentials. \n'
                     });
                 }
-                if (email === user.email && password === user.password) {
-                    console.log('local auth return true');
-                    return done(null, user);
+                if (!bcrypt.compareSync(password, user.password)) {
+                    return done(null, false, {
+                        message: 'Invalid Credentials. \n'
+                    });
                 }
                 return done(null, user);
             })
@@ -109,6 +111,29 @@ app.get('/', (req, res) => {
     res.send(`You got home page!\n`);
 });
 
+// create account
+app.post('/create', (req, res) => {
+    console.log('in create callback');
+    console.log(req.body);
+    const user = req.body;
+    bcrypt.hash(user.password, 10)
+        .then((hash) => {
+            console.log(hash)
+            pool.query(`INSERT INTO users (name, email, password) VALUES ('${user.name}', '${user.email}', '${hash}');`)
+                .then((res) => {
+                    console.log('inserted user, ', res)
+                })
+                .catch(e => {
+                    console.log('psql error', e)
+                })
+        })
+        .catch(e => {
+            console.log('bcrypt error', e)
+        })
+    return res.send(200);
+});
+
+// login
 app.get('/login', (req, res) => {
     console.log('Inside GET /login callback', req.sessionID);
     res.send(`You got the login page!\n`);
