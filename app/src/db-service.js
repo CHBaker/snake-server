@@ -43,7 +43,34 @@ const checkDb = () => {
     }
 }
 
+const getScores = (req, res, next) => {
+    pool.query(`
+        SELECT name, score FROM users ORDER BY score DESC;
+    `)
+    .then((data) => {
+        scores = data.rows;
+        if (scores) {
+            res.json({
+                success: true,
+                body: scores,
+            });
+        } else {
+            res.json({
+                success: false,
+                body: 'no scores were found'
+            });
+        }
+    })
+    .catch((e) => {
+        res.json({
+            success: false,
+            error: e
+        })
+    })
+}
+
 module.exports =  {
     checkDb,
-    pool
+    pool,
+    getScores
 }
