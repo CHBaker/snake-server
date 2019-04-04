@@ -69,8 +69,52 @@ const getScores = (req, res, next) => {
     })
 }
 
+const updateScore = (req, res, next) => {
+    const { id, score } = req.body;
+    pool.query(`
+        SELECT score FROM users WHERE id = ${id}
+    `)
+    .then((data) => {
+        const oldScore = data.rows[0].score;
+        console.log('oldScore', oldScore);
+        console.log('new score', score);
+        if (score > oldScore) {
+
+            pool.query(`
+                UPDATE users SET score = ${score} WHERE id = ${id};
+            `)
+            .then((data) => {
+                console.log('update score')
+                res.json({
+                    success: true,
+                    body: 'score updated to ' + score
+                })
+            })
+            .catch((e) => {
+                console.log('failed ', e)
+                res.json({
+                    success: true,
+                    body: 'score failed to update'
+                });
+            });
+        } else {
+
+            res.json({
+                success: true,
+                body: 'user did not set a new high score'
+            });
+        }
+    }).catch((e) => {
+        res.json({
+            success: true,
+            body: 'failed to retrieve score'
+        });
+    })
+}
+
 module.exports =  {
     checkDb,
     pool,
-    getScores
+    getScores,
+    updateScore
 }

@@ -25,7 +25,10 @@ app.post('/create', middleware.createUser);
 // login
 app.post('/login', middleware.login);
 
+// score handling
 app.get('/scores', middleware.checkToken, dbService.getScores);
+
+app.post('/score', middleware.checkToken, dbService.updateScore);
 
 app.listen(port, function() {
     console.log(`boo'd up on port ${port}`);
