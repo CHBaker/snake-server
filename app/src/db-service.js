@@ -3,9 +3,9 @@ const env = require('../../.env');
 
 // create pool connections manager
 const pool = new Pool({
-    user: 'postgres',
+    user: 'node_status',
     host: '127.0.0.1',
-    database: 'snake',
+    database: 'status_page',
     password: env.dbPassword,
     port: '5432'
 });
@@ -45,10 +45,11 @@ const checkDb = () => {
 
 const getScores = (req, res, next) => {
     pool.query(`
-        SELECT name, score FROM users ORDER BY score DESC;
+        SELECT name, score FROM users ORDER BY score DESC LIMIT 10;
     `)
     .then((data) => {
-        scores = data.rows;
+        // only get top 10 scores
+        scores = data.rows
         if (scores) {
             res.json({
                 success: true,
@@ -70,19 +71,21 @@ const getScores = (req, res, next) => {
 }
 
 const updateScore = (req, res, next) => {
-    const { id, score } = req.body;
+    const { email, score } = req.body;
+    console.log('email, score ', email, score);
     pool.query(`
-        SELECT score FROM users WHERE id = ${id}
-    `)
+        SELECT score FROM users WHERE email = $1;
+    `, [email])
     .then((data) => {
+        console.log('data')
         const oldScore = data.rows[0].score;
         console.log('oldScore', oldScore);
         console.log('new score', score);
         if (score > oldScore) {
 
             pool.query(`
-                UPDATE users SET score = ${score} WHERE id = ${id};
-            `)
+                UPDATE users SET score = $1 WHERE email = $2;
+            `, [score, email])
             .then((data) => {
                 console.log('update score')
                 res.json({

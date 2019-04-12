@@ -25,10 +25,8 @@ const createUser = (req, res, next) => {
     if (password && email && name) {
         bcrypt.hash(password, 10)
             .then((hash) => {
-                console.log(hash)
-                pool.query(`INSERT INTO users (name, email, password) VALUES ('${name}', '${email}', '${hash}');`)
-                    .then((res) => {
-                        
+                pool.query(`INSERT INTO users (name, email, password) VALUES ($1, $2, $3);`, [name, email, hash])
+                    .then((data) => {
                         const token = createToken(email);
                         return res.json({
                             success: true,
@@ -37,6 +35,7 @@ const createUser = (req, res, next) => {
                         });
                     })
                     .catch(e => {
+                        console.log(e)
                         return res.json({
                             success: false,
                             message: 'failure to create login',
@@ -65,7 +64,7 @@ const login = (req, res, next) => {
     let user = null;
     
     // get user by email from db
-    pool.query(`SELECT * from users where lower(email) = lower('${email}');`)
+    pool.query(`SELECT * from users where lower(email) = lower($1);`, [email])
         .then((results) => {
             user = results.rows[0]
 
@@ -109,6 +108,7 @@ const checkToken = (req, res, next) => {
 
         jwt.verify(token, env.secret, (err, decodedToken) => {
             if (err) {
+                console.log('error verifying ', err)
                 return res.json({
                     success: false,
                     message: 'Invalid Token'
@@ -119,6 +119,7 @@ const checkToken = (req, res, next) => {
             }
         });
     } else {
+        console.log('no token, ', token)
         return res.json({
             success: false,
             message: 'Auth token not supplied'
